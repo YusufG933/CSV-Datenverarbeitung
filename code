@@ -1,0 +1,423 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+namespace CSVVerarbeitung
+{
+    // Klassen
+    class Datensatz
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Kategorie { get; set; }
+        public int Wert { get; set; }
+        public DateTime Datum { get; set; }
+
+        public Datensatz()
+        {
+        }
+
+        public void ZeigeDetails()
+        {
+            Console.WriteLine($"ID: {Id}");
+            Console.WriteLine($"Name: {Name}");
+            Console.WriteLine($"Kategorie: {Kategorie}");
+            Console.WriteLine($"Wert: {Wert}");
+            Console.WriteLine($"Datum: {Datum.ToShortDateString()}");
+        }
+    }
+
+    class Program
+    {
+        static List<Datensatz> datensatzListe = new List<Datensatz>();
+        
+        static string standardDateiname = "daten.csv";
+        
+        static void Main(string[] args)
+        {
+            Console.WriteLine("=== CSV Verarbeitung ===");
+            Console.WriteLine($"INFO: Das Programm sucht automatisch nach der Datei '{standardDateiname}' im Programmverzeichnis.");
+            Console.WriteLine($"Das aktuelle Verzeichnis ist: {Directory.GetCurrentDirectory()}");
+            Console.WriteLine("Lege eine CSV-Datei mit diesem Namen in diesem Verzeichnis ab.\n");
+
+            bool programLaeuft = true;
+
+            while (programLaeuft)
+            {
+                ZeigeMenue();
+                string auswahl = Console.ReadLine();
+
+                if (auswahl == "1")
+                {
+                    ImportiereCSV();
+                }
+                else if (auswahl == "2")
+                {
+                    ZeigeDaten();
+                }
+                else if (auswahl == "3")
+                {
+                    NeuerDatensatz();
+                }
+                else if (auswahl == "4")
+                {
+                    BearbeiteDatensatz();
+                }
+                else if (auswahl == "5")
+                {
+                    ZeigeStatistik();
+                }
+                else if (auswahl == "6")
+                {
+                    ExportiereCSV();
+                }
+                else if (auswahl == "7")
+                {
+                    programLaeuft = false;
+                }
+                else
+                {
+                    Console.WriteLine("Ungültige Eingabe. Bitte versuche es erneut.");
+                }
+
+                Console.WriteLine("\nDrücke eine Taste, um fortzufahren...");
+                Console.ReadKey();
+                Console.Clear();
+            }
+        }
+
+        static void ZeigeMenue()
+        {
+            Console.WriteLine("=== CSV Verarbeitung ===");
+            Console.WriteLine("1. CSV-Datei importieren");
+            Console.WriteLine("2. Daten anzeigen");
+            Console.WriteLine("3. Neuen Datensatz anlegen");
+            Console.WriteLine("4. Datensatz bearbeiten");
+            Console.WriteLine("5. Statistik anzeigen");
+            Console.WriteLine("6. Als CSV exportieren");
+            Console.WriteLine("7. Beenden");
+            Console.Write("Wähle eine Option: ");
+        }
+
+        static void ImportiereCSV()
+        {
+            Console.Write($"Dateiname eingeben (Enter für Standard '{standardDateiname}'): ");
+            string eingabe = Console.ReadLine();
+            string dateipfad = string.IsNullOrEmpty(eingabe) ? standardDateiname : eingabe;
+
+            if (File.Exists(dateipfad))
+            {
+                try
+                {
+                    datensatzListe.Clear(); // Liste leeren
+                    string[] zeilen = File.ReadAllLines(dateipfad);
+
+                    // Überprüfen auf leere Datei
+                    if (zeilen.Length == 0)
+                    {
+                        Console.WriteLine("Die Datei ist leer!");
+                        return;
+                    }
+
+                    // Überprüfen, ob die Kopfzeile passt
+                    string[] kopfzeile = zeilen[0].Split(',');
+                    if (kopfzeile.Length < 5 || 
+                        !kopfzeile[0].Contains("Id") || 
+                        !kopfzeile[1].Contains("Name") || 
+                        !kopfzeile[2].Contains("Kategorie") || 
+                        !kopfzeile[3].Contains("Wert") || 
+                        !kopfzeile[4].Contains("Datum"))
+                    {
+                        Console.WriteLine("Die Datei hat nicht das erwartete Format!");
+                        Console.WriteLine("Die Kopfzeile sollte sein: Id,Name,Kategorie,Wert,Datum");
+                        return;
+                    }
+
+                    // Erste Zeile überspringen (Header)
+                    for (int i = 1; i < zeilen.Length; i++)
+                    {
+                        string[] felder = zeilen[i].Split(',');
+                        if (felder.Length >= 5) // Überprüfen, ob genug Felder vorhanden sind
+                        {
+                            Datensatz ds = new Datensatz();
+                            ds.Id = felder[0];
+                            ds.Name = felder[1];
+                            ds.Kategorie = felder[2];
+                            
+                          
+                            if (int.TryParse(felder[3], out int wert))
+                            {
+                                ds.Wert = wert;
+                            }
+                            
+                            // Datum 
+                            if (DateTime.TryParse(felder[4], out DateTime datum))
+                            {
+                                ds.Datum = datum;
+                            }
+                            
+                            datensatzListe.Add(ds);
+                        }
+                    }
+
+                    Console.WriteLine($"Import erfolgreich! {datensatzListe.Count} Datensätze geladen.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Fehler beim Import: {ex.Message}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Die angegebene Datei '{dateipfad}' wurde nicht gefunden.");
+                Console.WriteLine($"Stellen Sie sicher, dass die Datei im aktuellen Verzeichnis liegt: {Directory.GetCurrentDirectory()}");
+                
+                // Option zum Erstellen einer Beispieldatei
+                Console.Write("Möchten Sie eine Beispiel-CSV-Datei erstellen? (ja/nein): ");
+                if (Console.ReadLine().ToLower() == "ja")
+                {
+                    ErstelleBeispielDatei();
+                }
+            }
+        }
+
+        static void ErstelleBeispielDatei()
+        {
+            try
+            {
+                // Erstellet eine Beispieldatei
+                List<string> beispielZeilen = new List<string>
+                {
+                    "Id,Name,       Kategorie,Wert,Datum",
+                    "1,Laptop,      Elektronik,899,2023-01-15",
+                    "2,Smartphone,  Elektronik,499,2023-02-10",
+                    "3,Buch,        Medien,29,2023-02-20",
+                    "4,Drucker,     Bürobedarf,199,2023-03-05",
+                    "5,Kamera,      Elektronik,649,2023-03-12"
+                };
+
+                File.WriteAllLines(standardDateiname, beispielZeilen);
+                Console.WriteLine($"Beispieldatei '{standardDateiname}' wurde erfolgreich erstellt!");
+                Console.WriteLine($"Sie können sie jetzt unter Option 1 importieren.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Fehler beim Erstellen der Beispieldatei: {ex.Message}");
+            }
+        }
+
+        static void ZeigeDaten()
+        {
+            if (datensatzListe.Count == 0)
+            {
+                Console.WriteLine("Keine Daten vorhanden. Bitte importiere zuerst eine CSV-Datei.");
+                return;
+            }
+
+            Console.WriteLine("\n=== Datensätze ===");
+            Console.WriteLine("ID\tName\t\tKategorie\tWert\tDatum");
+            Console.WriteLine("-----------------------------------------------------------");
+
+            foreach (Datensatz ds in datensatzListe)
+            {
+                Console.WriteLine($"{ds.Id}\t{ds.Name}\t{ds.Kategorie}\t\t{ds.Wert}\t{ds.Datum.ToShortDateString()}");
+            }
+        }
+
+        static void NeuerDatensatz()
+        {
+            Datensatz neuerDS = new Datensatz();
+
+            Console.WriteLine("\n=== Neuen Datensatz anlegen ===");
+            Console.Write("ID: ");
+            neuerDS.Id = Console.ReadLine();
+
+            Console.Write("Name: ");
+            neuerDS.Name = Console.ReadLine();
+
+            Console.Write("Kategorie: ");
+            neuerDS.Kategorie = Console.ReadLine();
+
+            Console.Write("Wert: ");
+            if (int.TryParse(Console.ReadLine(), out int wert))
+            {
+                neuerDS.Wert = wert;
+            }
+            else
+            {
+                Console.WriteLine("Ungültiger Wert. Auf 0 gesetzt.");
+                neuerDS.Wert = 0;
+            }
+
+            Console.Write("Datum (TT.MM.JJJJ): ");
+            if (DateTime.TryParse(Console.ReadLine(), out DateTime datum))
+            {
+                neuerDS.Datum = datum;
+            }
+            else
+            {
+                Console.WriteLine("Ungültiges Datum. Heutiges Datum wird verwendet.");
+                neuerDS.Datum = DateTime.Today;
+            }
+
+            datensatzListe.Add(neuerDS);
+            Console.WriteLine("Datensatz erfolgreich hinzugefügt!");
+        }
+
+        static void BearbeiteDatensatz()
+        {
+            if (datensatzListe.Count == 0)
+            {
+                Console.WriteLine("Keine Daten vorhanden. Bitte importiere zuerst eine CSV-Datei.");
+                return;
+            }
+
+            ZeigeDaten();
+            
+            Console.Write("\nGib die ID des zu bearbeitenden Datensatzes ein: ");
+            string suchId = Console.ReadLine();
+
+            Datensatz gefundenerDS = null;
+            foreach (Datensatz ds in datensatzListe)
+            {
+                if (ds.Id == suchId)
+                {
+                    gefundenerDS = ds;
+                    break;
+                }
+            }
+
+            if (gefundenerDS != null)
+            {
+                Console.WriteLine("\nGefundener Datensatz:");
+                gefundenerDS.ZeigeDetails();
+
+                Console.WriteLine("\nGib neue Werte ein (oder leer lassen, um den alten Wert beizubehalten):");
+                
+                Console.Write("Name [" + gefundenerDS.Name + "]: ");
+                string eingabe = Console.ReadLine();
+                if (!string.IsNullOrEmpty(eingabe))
+                {
+                    gefundenerDS.Name = eingabe;
+                }
+
+                Console.Write("Kategorie [" + gefundenerDS.Kategorie + "]: ");
+                eingabe = Console.ReadLine();
+                if (!string.IsNullOrEmpty(eingabe))
+                {
+                    gefundenerDS.Kategorie = eingabe;
+                }
+
+                Console.Write("Wert [" + gefundenerDS.Wert + "]: ");
+                eingabe = Console.ReadLine();
+                if (!string.IsNullOrEmpty(eingabe) && int.TryParse(eingabe, out int wert))
+                {
+                    gefundenerDS.Wert = wert;
+                }
+
+                Console.Write("Datum [" + gefundenerDS.Datum.ToShortDateString() + "]: ");
+                eingabe = Console.ReadLine();
+                if (!string.IsNullOrEmpty(eingabe) && DateTime.TryParse(eingabe, out DateTime datum))
+                {
+                    gefundenerDS.Datum = datum;
+                }
+
+                Console.WriteLine("Datensatz erfolgreich aktualisiert!");
+            }
+            else
+            {
+                Console.WriteLine("Kein Datensatz mit dieser ID gefunden.");
+            }
+        }
+
+        static void ZeigeStatistik()
+        {
+            if (datensatzListe.Count == 0)
+            {
+                Console.WriteLine("Keine Daten vorhanden. Bitte importiere zuerst eine CSV-Datei.");
+                return;
+            }
+
+            var kategorieGruppen = new Dictionary<string, int>();
+            
+            foreach (Datensatz ds in datensatzListe)
+            {
+                if (kategorieGruppen.ContainsKey(ds.Kategorie))
+                {
+                    kategorieGruppen[ds.Kategorie] += ds.Wert;
+                }
+                else
+                {
+                    kategorieGruppen[ds.Kategorie] = ds.Wert;
+                }
+            }
+
+            int gesamtSumme = 0;
+            foreach (var wert in kategorieGruppen.Values)
+            {
+                gesamtSumme += wert;
+            }
+
+            Console.WriteLine("\n=== Kategorie-Statistik ===");
+            foreach (var gruppe in kategorieGruppen)
+            {
+                double prozent = (double)gruppe.Value / gesamtSumme * 100;
+                
+                Console.Write($"{gruppe.Key} ({prozent:F1}%): ");
+                
+                int balkenLaenge = (int)(prozent / 2);
+                for (int i = 0; i < balkenLaenge; i++)
+                {
+                    Console.Write("█");
+                }
+                Console.WriteLine($" {gruppe.Value}");
+            }
+        }
+
+        static void ExportiereCSV()
+        {
+            if (datensatzListe.Count == 0)
+            {
+                Console.WriteLine("Keine Daten vorhanden. Bitte importiere zuerst eine CSV-Datei.");
+                return;
+            }
+
+            Console.Write($"Dateiname zum Speichern eingeben (Enter für Standard '{standardDateiname}'): ");
+            string eingabe = Console.ReadLine();
+            string exportPfad = string.IsNullOrEmpty(eingabe) ? standardDateiname : eingabe;
+
+            try
+            {
+                // Warnung, wenn eine Datei bereits existiert
+                if (File.Exists(exportPfad))
+                {
+                    Console.Write($"Die Datei '{exportPfad}' existiert bereits. Überschreiben? (j/n): ");
+                    if (Console.ReadLine().ToLower() != "j")
+                    {
+                        Console.WriteLine("Export abgebrochen.");
+                        return;
+                    }
+                }
+
+                // Header 
+                List<string> ausgabeZeilen = new List<string>();
+                ausgabeZeilen.Add("Id,Name,Kategorie,Wert,Datum");
+
+                // Daten schreiben
+                foreach (Datensatz ds in datensatzListe)
+                {
+                    string zeile = $"{ds.Id},{ds.Name},{ds.Kategorie},{ds.Wert},{ds.Datum.ToString("yyyy-MM-dd")}";
+                    ausgabeZeilen.Add(zeile);
+                }
+
+                // In Datei schreiben
+                File.WriteAllLines(exportPfad, ausgabeZeilen);
+                Console.WriteLine($"Export erfolgreich! Datei wurde als '{exportPfad}' gespeichert.");
+                Console.WriteLine($"Speicherort: {Directory.GetCurrentDirectory()}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Fehler beim Export: {ex.Message}");
+            }
+        }
+    }
