@@ -7,11 +7,7 @@ Dieses Projekt ist eine CSV-Verarbeitungsanwendung in C# mit der Möglichkeit, C
 Ich habe mich entschieden, das Projekt als C#-Konsolenanwendung umzusetzen, anstatt eine PHP-Lösung zu verwenden, da ich meine Programmierkenntnisse anhand einer vollwertigen Programmiersprache präsentieren wollte, anstatt eine Markup-Sprache zu nutzen.
 
 
-1.Folgende Technologien und Frameworks kommen in diesem Projekt zum Einsatz:
-
-Technologie / Framework
-
-Begründung
+1.Folgende Technologien und Frameworks kommen aus folgenden Gründen im Projekt zum Einsatz:
 
 .NET Core
 
